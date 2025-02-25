@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tweet Summarizer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        input, button, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tweet Summarizer</h1>
+        <form id="fetch-form">
+            <input type="text" id="username" placeholder="Enter Twitter username" required>
+            <button type="submit">Fetch Tweets</button>
+        </form>
+        <div id="tweets"></div>
+        <form id="summarize-form" style="display: none;">
+            <textarea id="tweets-input" readonly></textarea>
+            <button type="submit">Summarize Tweets</button>
+        </form>
+        <div id="summary"></div>
+    </div>
+    <script>
+        const BACKEND_URL = "http://127.0.0.1:5000"; // Update with your Flask backend URL
+    
+        document.getElementById("fetch-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const username = document.getElementById("username").value;
+            const tweetsDiv = document.getElementById("tweets");
+            const tweetsInput = document.getElementById("tweets-input");
+            const summarizeForm = document.getElementById("summarize-form");
+    
+            tweetsDiv.innerHTML = "Fetching tweets...";
+            summarizeForm.style.display = "none";
+    
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/fetch_tweets?username=${username}`);
+                const data = await response.json();
+    
+                if (response.ok) {
+                    tweetsDiv.innerHTML = `<h3>Fetched Tweets:</h3>`;
+                    const tweetsList = data.tweets.map(tweet => `<li>${tweet}</li>`).join("");
+                    tweetsDiv.innerHTML += `<ul>${tweetsList}</ul>`;
+                    tweetsInput.value = data.tweets.join("\n");
+                    summarizeForm.style.display = "block";
+                } else {
+                    tweetsDiv.innerHTML = `<p>Error: ${data.error}</p>`;
+                }
+            } catch (error) {
+                tweetsDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        });
+    
+        document.getElementById("summarize-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const tweets = document.getElementById("tweets-input").value.split("\n");
+            const summaryDiv = document.getElementById("summary");
+    
+            summaryDiv.innerHTML = "Summarizing tweets...";
+    
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/summarize`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ tweets })
+                });
+                const data = await response.json();
+    
+                if (response.ok) {
+                    summaryDiv.innerHTML = `<h3>Summary:</h3><p>${data.summary}</p>`;
+                } else {
+                    summaryDiv.innerHTML = `<p>Error: ${data.error}</p>`;
+                }
+            } catch (error) {
+                summaryDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        });
+    </script>    
+</body>
+</html>
